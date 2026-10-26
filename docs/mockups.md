@@ -1,4 +1,4 @@
-# UI Mockups — Canon Print MVP
+# UI Mockups — ChibishotsPrint MVP
 
 Static HTML/CSS wireframes for the MVP screens. Open `docs/mockups/index.html` in a browser to navigate.
 
@@ -20,6 +20,11 @@ Rendered PNGs are available under `docs/mockups/screenshots/`:
 - `03-crop-resize.png` — crop/resize/rotate
 - `04-queue-history.png` — queue & history
 - `05-photoshop-handoff.png` — Photoshop UXP handoff
+
+## Logo
+
+- App name: **ChibishotsPrint**.
+- Logo placeholder currently used in sidebar (orange "C" glyph). TODO: replace with Chibishots logo file/URL provided by captain.
 
 ## Notes
 
