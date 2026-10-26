@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Photoshop UXP handoff</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">CP</div>
+    <div class="navbtn">Print</div>
+    <div class="navbtn">Presets</div>
+    <div class="navbtn">Queue</div>
+    <div class="navbtn active">PS</div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <h1>Photoshop UXP handoff</h1>
+      <span class="spacer"></span>
+      <span class="status ok">Watcher active</span>
+    </header>
+    <div class="content" style="grid-template-columns:1fr 360px;">
+      <section class="panel" style="border-left:none;">
+        <h2>Watched folder</h2>
+        <div class="card">
+          <strong>Path:</strong> C:\CanonPrint\handoff\<br>
+          <span style="color:var(--muted);font-size:12px;">Flattened TIFF/PNG + JSON metadata dropped here by UXP panel.</span>
+        </div>
+        <h2>Incoming jobs</h2>
+        <table class="table">
+          <thead><tr><th>File</th><th>Meta</th><th>Received</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>ps_export_001.tif</td><td>preset=Luster 13x19, intent=Perceptual</td><td>10:43:02</td><td><button class="btn primary">Open in app</button> <button class="btn">Dismiss</button></td></tr>
+            <tr><td>ps_export_002.png</td><td>preset=Glossy 8x10, intent=Relative</td><td>10:43:40</td><td><button class="btn primary">Open in app</button> <button class="btn">Dismiss</button></td></tr>
+          </tbody>
+        </table>
+        <h2 style="margin-top:24px;">UXP panel (Photoshop)</h2>
+        <div class="card">
+          <p style="margin:0 0 8px;">Panel actions:</p>
+          <ul style="margin:0;padding-left:18px;color:var(--muted);font-size:13px;">
+            <li>Export flattened image (TIFF/PNG) to watched folder.</li>
+            <li>Write sidecar JSON: source profile, preset hint, notes, crop/resize params.</li>
+            <li>Invoke companion app with file path (optional deep link).</li>
+          </ul>
+        </div>
+      </section>
+      <aside class="panel">
+        <h2>Handoff metadata (sidecar)</h2>
+        <div class="field"><label>source_file</label><input value="ps_export_001.tif" readonly /></div>
+        <div class="field"><label>source_profile</label><input value="Adobe RGB (1998)" readonly /></div>
+        <div class="field"><label>preset_hint</label><input value="Luster 13x19" readonly /></div>
+        <div class="field"><label>rendering_intent</label><input value="Perceptual" readonly /></div>
+        <div class="field"><label>notes</label><textarea rows="3" readonly>Proof for client review</textarea></div>
+        <div class="field"><label>crop</label><input value="{x:0,y:0,w:4000,h:3000}" readonly /></div>
+        <div class="toolbar" style="border-top:none;padding:0;margin-top:12px;">
+          <button class="btn">Edit metadata</button>
+          <span class="spacer"></span>
+          <button class="btn primary">Create print job</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</body>
+</html>

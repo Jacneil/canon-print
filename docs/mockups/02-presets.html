@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Per-media preset panel</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">CP</div>
+    <div class="navbtn">Print</div>
+    <div class="navbtn active">Presets</div>
+    <div class="navbtn">Queue</div>
+    <div class="navbtn">Sets</div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <h1>Per-media presets</h1>
+      <span class="spacer"></span>
+      <button class="btn">Import…</button>
+      <button class="btn primary">New preset</button>
+    </header>
+    <div class="content" style="grid-template-columns: 260px 1fr;">
+      <section class="panel" style="border-right:1px solid var(--border);border-left:none;">
+        <h2>Saved presets</h2>
+        <div class="preset-list">
+          <div class="preset-item active"><strong>Luster 13x19</strong><br><span style="color:var(--muted);font-size:11px;">Canon Luster · Perceptual</span></div>
+          <div class="preset-item"><strong>Glossy 8x10</strong><br><span style="color:var(--muted);font-size:11px;">Canon Glossy II · Relative</span></div>
+          <div class="preset-item"><strong>Matte 11x14</strong><br><span style="color:var(--muted);font-size:11px;">Canon Matte · Saturation</span></div>
+          <div class="preset-item"><strong>Fine Art 17x22</strong><br><span style="color:var(--muted);font-size:11px;">Hahnemühle Rag · Perceptual</span></div>
+        </div>
+      </section>
+      <section class="panel" style="border-left:none;">
+        <h2>Preset details</h2>
+        <div class="field"><label>Name</label><input value="Luster 13x19" /></div>
+        <div class="field"><label>Media type</label>
+          <select><option>Canon Photo Paper Plus Glossy II</option><option>Canon Luster</option><option>Canon Matte</option><option>Third-party fine art</option></select>
+        </div>
+        <h2>Canon driver settings</h2>
+        <div class="grid2">
+          <div class="field"><label>Quality</label><select><option>Highest</option><option>High</option><option>Standard</option></select></div>
+          <div class="field"><label>Color correction</label><input value="None (app-managed)" readonly /></div>
+          <div class="field"><label>Paper source</label><select><option>Rear tray</option><option>Cassette</option></select></div>
+          <div class="field"><label>Borderless</label><select><option>Off</option><option>On</option></select></div>
+        </div>
+        <h2>ICC profile</h2>
+        <div class="field"><label>Printer ICC profile</label>
+          <div class="row"><input value="Canon_PRO100S_Luster.icc" readonly /><button class="btn">Browse…</button></div>
+        </div>
+        <div class="field"><label>Source profile handling</label><select><option>Use embedded / sRGB fallback</option><option>Assign sRGB</option><option>Assign Adobe RGB</option></select></div>
+        <div class="field"><label>Rendering intent</label><select><option>Perceptual</option><option>Relative Colorimetric</option><option>Saturation</option><option>Absolute Colorimetric</option></select></div>
+        <div class="field"><label>Black point compensation</label><select><option>On</option><option>Off</option></select></div>
+        <h2>Margins defaults</h2>
+        <div class="grid2">
+          <div class="field"><label>Top (mm)</label><input value="5" /></div>
+          <div class="field"><label>Bottom (mm)</label><input value="5" /></div>
+          <div class="field"><label>Left (mm)</label><input value="5" /></div>
+          <div class="field"><label>Right (mm)</label><input value="5" /></div>
+        </div>
+        <div class="toolbar" style="border-top:none;padding:0;margin-top:12px;">
+          <button class="btn">Duplicate</button>
+          <button class="btn">Delete</button>
+          <span class="spacer"></span>
+          <button class="btn primary">Save preset</button>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>
