@@ -44,6 +44,7 @@ UXP panel: load `uxp-panel/manifest.json` in Photoshop (UXP Developer Tool) for 
 
 ## CI / Builds
 
-GitHub Actions builds the Tauri app on every push/PR to `master` for Windows and macOS,
-producing installable artifacts (`.msi`/`.exe` on Windows, `.dmg` on macOS) uploaded as
-workflow artifacts. Tagged releases (`v*`) also create a GitHub Release with the installers.
+GitHub Actions builds the Tauri app on manual trigger (`workflow_dispatch`), version tags
+(`v*`), and pull requests to `master` for Windows and macOS, producing installable artifacts
+(`.msi`/`.exe` on Windows, `.dmg` on macOS) uploaded as workflow artifacts. Tagged releases
+(`v*`) also create a GitHub Release with the installers. Pushes to `master` no longer trigger a build.
