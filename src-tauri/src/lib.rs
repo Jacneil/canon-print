@@ -399,6 +399,7 @@ pub struct UpscaleModelStatus {
 }
 
 fn upscale_model_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    use tauri::Manager;
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("models");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir)
@@ -445,6 +446,7 @@ async fn download_upscale_model(app: tauri::AppHandle) -> Result<String, String>
         let progress = if total > 0 { downloaded as f64 / total as f64 } else { 0.0 };
         app.emit("upscale-model-progress", serde_json::json!({"stage":"downloading","progress":progress,"downloaded":downloaded,"total":total})).ok();
     }
+    use std::io::Write;
     file.flush().map_err(|e| e.to_string())?;
     app.emit("upscale-model-progress", serde_json::json!({"stage":"done","progress":1.0,"path":path})).ok();
     Ok(path.to_string_lossy().to_string())
@@ -481,8 +483,7 @@ fn run_onnx_upscale(app: tauri::AppHandle, input_path: &str, out_path: &str, sca
     let input_name = session.inputs().first().map(|i| i.name.clone()).unwrap_or_else(|| "input".into());
     let outputs = session.run(ort::inputs![input_name.as_str() => input_tensor]).map_err(|e| e.to_string())?;
 
-    let out_name = session.outputs().first().map(|o| o.name.clone()).unwrap_or_default();
-    let out_val = &outputs[out_name.as_str()];
+    let out_val = outputs.iter().next().map(|(_, v)| v).unwrap();
     let (shape, data) = out_val.try_extract_tensor::<f32>().map_err(|e| e.to_string())?;
     let out_h = shape[2] as usize;
     let out_w = shape[3] as usize;
