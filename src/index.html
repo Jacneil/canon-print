@@ -34,7 +34,7 @@
   </main>
 </div>
 <script>
-  const invoke = (cmd, args) => window.__TAURI__ ? window.__TAURI__.core.invoke(cmd, args) : Promise.reject('no tauri');
+  const invoke = (cmd, args) => (window.__TAURI_INTERNALS__ ? window.__TAURI_INTERNALS__.invoke(cmd, args) : (window.__TAURI__ ? window.__TAURI__.core.invoke(cmd, args) : Promise.reject('no tauri')));
   const view = document.getElementById('view');
   function showPrint() {
     view.innerHTML = '<h2>Print</h2><p>Select an image and a preset, then send to spooler.</p><div id="status"></div>';
