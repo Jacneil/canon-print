@@ -387,6 +387,129 @@ fn soft_proof(input_path: String, output_path: String, printer_profile: String, 
     Ok(output_path)
 }
 
+const UPSCALE_MODEL_URL: &str = "https://huggingface.co/notaneimu/onnx-image-models/resolve/main/4xPurePhoto-RealPLSKR.onnx";
+const UPSCALE_MODEL_FILE: &str = "4xPurePhoto-RealPLSKR.onnx";
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct UpscaleModelStatus {
+    pub available: bool,
+    pub downloaded: bool,
+    pub path: Option<String>,
+    pub url: String,
+}
+
+fn upscale_model_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("models");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir)
+}
+
+fn upscale_model_path(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
+    Ok(upscale_model_dir(app)?.join(UPSCALE_MODEL_FILE))
+}
+
+#[tauri::command]
+fn upscale_model_status(app: tauri::AppHandle) -> UpscaleModelStatus {
+    let path = upscale_model_path(&app).ok();
+    let exists = path.as_ref().map(|p| p.exists()).unwrap_or(false);
+    UpscaleModelStatus {
+        available: exists,
+        downloaded: exists,
+        path: path.map(|p| p.to_string_lossy().to_string()),
+        url: UPSCALE_MODEL_URL.into(),
+    }
+}
+
+#[tauri::command]
+async fn download_upscale_model(app: tauri::AppHandle) -> Result<String, String> {
+    use futures_util::StreamExt;
+    use tauri::Emitter;
+    let path = upscale_model_path(&app)?;
+    if path.exists() {
+        return Ok(path.to_string_lossy().to_string());
+    }
+    app.emit("upscale-model-progress", serde_json::json!({"stage":"connecting","progress":0.0})).ok();
+    let resp = reqwest::get(UPSCALE_MODEL_URL).await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("model download failed: {}", resp.status()));
+    }
+    let total = resp.content_length().unwrap_or(0);
+    let mut file = std::fs::File::create(&path).map_err(|e| e.to_string())?;
+    let mut downloaded: u64 = 0;
+    let mut stream = resp.bytes_stream();
+    while let Some(chunk) = stream.next().await {
+        let chunk = chunk.map_err(|e| e.to_string())?;
+        use std::io::Write;
+        file.write_all(&chunk).map_err(|e| e.to_string())?;
+        downloaded += chunk.len() as u64;
+        let progress = if total > 0 { downloaded as f64 / total as f64 } else { 0.0 };
+        app.emit("upscale-model-progress", serde_json::json!({"stage":"downloading","progress":progress,"downloaded":downloaded,"total":total})).ok();
+    }
+    file.flush().map_err(|e| e.to_string())?;
+    app.emit("upscale-model-progress", serde_json::json!({"stage":"done","progress":1.0,"path":path})).ok();
+    Ok(path.to_string_lossy().to_string())
+}
+
+fn run_onnx_upscale(app: tauri::AppHandle, input_path: &str, out_path: &str, scale: u32) -> Result<String, String> {
+    use ort::session::Session;
+    use ort::value::Tensor;
+    use std::collections::HashMap;
+
+    let model_path = upscale_model_path(&app)?;
+    if !model_path.exists() {
+        return Err("model missing".into());
+    }
+
+    let img = image::open(input_path).map_err(|e| e.to_string())?.to_rgb8();
+    let (w, h) = (img.width() as usize, img.height() as usize);
+    let mut input = vec![0.0f32; 3 * w * h];
+    for y in 0..h {
+        for x in 0..w {
+            let p = img.get_pixel(x as u32, y as u32);
+            input[0 * w * h + y * w + x] = p[0] as f32 / 255.0;
+            input[1 * w * h + y * w + x] = p[1] as f32 / 255.0;
+            input[2 * w * h + y * w + x] = p[2] as f32 / 255.0;
+        }
+    }
+
+    let mut session = Session::builder().map_err(|e| e.to_string())?
+        .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3).map_err(|e| e.to_string())?
+        .commit_from_file(&model_path).map_err(|e| e.to_string())?;
+
+    let input_tensor = Tensor::from_array(([1i64, 3, h as i64, w as i64], input)).map_err(|e| e.to_string())?;
+
+    let input_name = session.inputs().first().map(|i| i.name.clone()).unwrap_or_else(|| "input".into());
+    let outputs = session.run(ort::inputs![input_name.as_str() => input_tensor]).map_err(|e| e.to_string())?;
+
+    let out_name = session.outputs().first().map(|o| o.name.clone()).unwrap_or_default();
+    let out_val = &outputs[out_name.as_str()];
+    let (shape, data) = out_val.try_extract_tensor::<f32>().map_err(|e| e.to_string())?;
+    let out_h = shape[2] as usize;
+    let out_w = shape[3] as usize;
+
+    let mut out_img = image::RgbImage::new(out_w as u32, out_h as u32);
+    for y in 0..out_h {
+        for x in 0..out_w {
+            let r = (data[0 * out_h * out_w + y * out_w + x] * 255.0).clamp(0.0, 255.0) as u8;
+            let g = (data[1 * out_h * out_w + y * out_w + x] * 255.0).clamp(0.0, 255.0) as u8;
+            let b = (data[2 * out_h * out_w + y * out_w + x] * 255.0).clamp(0.0, 255.0) as u8;
+            out_img.put_pixel(x as u32, y as u32, image::Rgb([r, g, b]));
+        }
+    }
+    // optional scale not enforced by model (model is 4x); resize if requested differs
+    let final_img = if scale != 4 {
+        image::DynamicImage::ImageRgb8(out_img).resize_exact(
+            (w as u32).saturating_mul(scale),
+            (h as u32).saturating_mul(scale),
+            image::imageops::FilterType::Lanczos3,
+        )
+    } else {
+        image::DynamicImage::ImageRgb8(out_img)
+    };
+    final_img.save(out_path).map_err(|e| e.to_string())?;
+    Ok(out_path.to_string())
+}
+
 #[tauri::command]
 fn image_dimensions(path: String) -> Result<(u32, u32), String> {
     let img = image::open(&path).map_err(|e| e.to_string())?;
@@ -411,14 +534,36 @@ async fn upscale_image(
     let scale = scale.clamp(1, 4);
     app.emit("upscale-progress", serde_json::json!({"stage":"loading","progress":0.0})).ok();
 
-    let img = image::open(&path).map_err(|e| e.to_string())?;
-    let (w, h) = (img.width(), img.height());
-    let new_w = w.saturating_mul(scale);
-    let new_h = h.saturating_mul(scale);
+    // ensure model is present (download on first use)
+    let model_path = upscale_model_path(&app).ok();
+    if model_path.as_ref().map(|p| !p.exists()).unwrap_or(true) {
+        app.emit("upscale-progress", serde_json::json!({"stage":"downloading-model","progress":0.05})).ok();
+        let _ = download_upscale_model(app.clone()).await;
+    }
 
-    app.emit("upscale-progress", serde_json::json!({"stage":"resizing","progress":0.25,"from":[w,h],"to":[new_w,new_h]})).ok();
-
-    let mut out = img.resize_exact(new_w, new_h, image::imageops::FilterType::Lanczos3);
+    let model_available = upscale_model_path(&app).map(|p| p.exists()).unwrap_or(false);
+    let mut out = if model_available {
+        app.emit("upscale-progress", serde_json::json!({"stage":"inferencing","progress":0.25})).ok();
+        let app2 = app.clone();
+        let path2 = path.clone();
+        let out2 = out_path.clone();
+        match tauri::async_runtime::spawn_blocking(move || run_onnx_upscale(app2, &path2, &out2, scale)).await {
+            Ok(Ok(p)) => {
+                app.emit("upscale-progress", serde_json::json!({"stage":"saving","progress":0.9})).ok();
+                image::open(&p).map_err(|e| e.to_string())?
+            }
+            _ => {
+                // fallback
+                app.emit("upscale-progress", serde_json::json!({"stage":"fallback","progress":0.3})).ok();
+                let img = image::open(&path).map_err(|e| e.to_string())?;
+                img.resize_exact(img.width().saturating_mul(scale), img.height().saturating_mul(scale), image::imageops::FilterType::Lanczos3)
+            }
+        }
+    } else {
+        app.emit("upscale-progress", serde_json::json!({"stage":"resizing","progress":0.25})).ok();
+        let img = image::open(&path).map_err(|e| e.to_string())?;
+        img.resize_exact(img.width().saturating_mul(scale), img.height().saturating_mul(scale), image::imageops::FilterType::Lanczos3)
+    };
 
     if sharpen {
         app.emit("upscale-progress", serde_json::json!({"stage":"sharpening","progress":0.7})).ok();
@@ -509,7 +654,9 @@ pub fn run() {
             image_dimensions,
             should_upscale,
             upscale_image,
-            prepare_print_image
+            prepare_print_image,
+            upscale_model_status,
+            download_upscale_model
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
