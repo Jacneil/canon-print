@@ -1,0 +1,17 @@
+{
+  "id": "com.chibishots.print.uxp",
+  "name": "ChibishotsPrint Handoff",
+  "version": "0.1.0",
+  "main": "index.html",
+  "host": [
+    { "app": "PS", "minVersion": "24.0.0" }
+  ],
+  "manifestVersion": 5,
+  "entrypoints": [
+    { "type": "panel", "id": "chibishotsprint.panel", "label": "ChibishotsPrint", "minimumSize": { "width": 280, "height": 200 } }
+  ],
+  "requiredPermissions": {
+    "localFileSystem": "request",
+    "network": { "domains": ["https://*"] }
+  }
+}
