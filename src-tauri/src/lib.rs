@@ -474,7 +474,7 @@ fn run_onnx_upscale(app: tauri::AppHandle, input_path: &str, out_path: &str, sca
         }
     }
 
-    let env = ort::environment::Environment::default();
+    let env = ort::init().build().map_err(|e| e.to_string())?;
     let mut session = Session::builder(&env).map_err(|e| e.to_string())?
         .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3).map_err(|e| e.to_string())?
         .commit_from_file(&model_path).map_err(|e| e.to_string())?;
