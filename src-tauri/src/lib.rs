@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 use tauri::State;
+use tauri::Manager;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Preset {
@@ -399,7 +400,6 @@ pub struct UpscaleModelStatus {
 }
 
 fn upscale_model_dir(app: &tauri::AppHandle) -> Result<std::path::PathBuf, String> {
-    use tauri::Manager;
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("models");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir)
@@ -480,10 +480,10 @@ fn run_onnx_upscale(app: tauri::AppHandle, input_path: &str, out_path: &str, sca
 
     let input_tensor = Tensor::from_array(([1i64, 3, h as i64, w as i64], input)).map_err(|e| e.to_string())?;
 
-    let input_name = session.inputs().first().map(|i| i.name.clone()).unwrap_or_else(|| "input".into());
-    let outputs = session.run(ort::inputs![input_name.as_str() => input_tensor]).map_err(|e| e.to_string())?;
+    let input_name = "input";
+    let outputs = session.run(ort::inputs![input_name => input_tensor]).map_err(|e| e.to_string())?;
 
-    let out_val = outputs.iter().next().map(|(_, v)| v).unwrap();
+    let out_val = outputs.values().next().ok_or("no output")?;
     let (shape, data) = out_val.try_extract_tensor::<f32>().map_err(|e| e.to_string())?;
     let out_h = shape[2] as usize;
     let out_w = shape[3] as usize;
