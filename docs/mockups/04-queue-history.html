@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Print queue &amp; history</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><img src="../chibishots%20logo-UPSCALED.png" alt="Chibishots logo" /></div>
+    <div class="navbtn">Print</div>
+    <div class="navbtn active">Queue</div>
+    <div class="navbtn">Hist</div>
+    <div class="navbtn">Sets</div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <h1>Print queue &amp; history</h1>
+      <span class="spacer"></span>
+      <button class="btn">Refresh</button>
+      <button class="btn">Clear finished</button>
+    </header>
+    <div class="content" style="grid-template-columns:1fr;">
+      <section class="panel" style="border-left:none;">
+        <h2>Active queue</h2>
+        <table class="table">
+          <thead><tr><th>Job</th><th>Media / Preset</th><th>Status</th><th>Submitted</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>photo_001.tif</td><td>Luster 13x19</td><td><span class="status warn">Printing</span></td><td>10:42:03</td><td><button class="btn">Cancel</button></td></tr>
+            <tr><td>portrait_07.png</td><td>Glossy 8x10</td><td><span class="status">Queued</span></td><td>10:42:11</td><td><button class="btn">Cancel</button></td></tr>
+            <tr><td>landscape_12.jpg</td><td>Matte 11x14</td><td><span class="status err">Failed</span></td><td>10:41:50</td><td><button class="btn primary">Retry</button></td></tr>
+          </tbody>
+        </table>
+        <h2 style="margin-top:24px;">Job history</h2>
+        <table class="table">
+          <thead><tr><th>Date</th><th>File</th><th>Media</th><th>Profile</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>2026-10-26 09:15</td><td>print_009.tif</td><td>Canon Luster</td><td>Canon_PRO100S_Luster.icc</td><td>client proof</td></tr>
+            <tr><td>2026-10-26 08:40</td><td>test_chart.png</td><td>Canon Matte</td><td>Canon_PRO100S_Matte.icc</td><td>calibration</td></tr>
+            <tr><td>2026-10-25 17:02</td><td>family.jpg</td><td>Canon Glossy II</td><td>Canon_PRO100S_Glossy.icc</td><td></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+</div>
+</body>
+</html>

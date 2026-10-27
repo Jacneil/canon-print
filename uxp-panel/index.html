@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>ChibishotsPrint Handoff</title>
+<style>
+  body { font-family: system-ui, sans-serif; padding:12px; background:#1a1d24; color:#e6e8ec; }
+  button { padding:8px 12px; border-radius:6px; border:1px solid #333; background:#2a2f3a; color:#fff; cursor:pointer; width:100%; margin-top:8px; }
+  button.primary { background:#ff7a18; border-color:#ff7a18; color:#1a0f05; }
+  label { display:block; font-size:12px; color:#9aa3b2; margin-top:8px; }
+  input, select, textarea { width:100%; padding:6px; border-radius:6px; border:1px solid #333; background:#232834; color:#fff; }
+</style>
+</head>
+<body>
+<h3>ChibishotsPrint</h3>
+<label>Preset hint</label>
+<select id="preset"><option>Luster 13x19</option><option>Glossy 8x10</option></select>
+<label>Rendering intent</label>
+<select id="intent"><option>Perceptual</option><option>Relative Colorimetric</option></select>
+<label>Notes</label>
+<textarea id="notes" rows="3"></textarea>
+<button class="primary" id="export">Export flattened + handoff</button>
+<div id="log" style="margin-top:10px;font-size:12px;color:#9aa3b2;"></div>
+<script>
+  async function run() {
+    const app = require('photoshop').app;
+    const doc = app.activeDocument;
+    // Flatten
+    await doc.flatten();
+    const folder = await require('uxp').storage.localFileSystem.getFolder();
+    const file = await folder.createFile('ps_export.tif', { overwrite: true });
+    await doc.saveAs.tif(file, {}, true);
+    const sidecar = {
+      source_file: file.name,
+      source_profile: doc.colorProfileName || 'sRGB',
+      preset_hint: document.getElementById('preset').value,
+      rendering_intent: document.getElementById('intent').value,
+      notes: document.getElementById('notes').value,
+      crop: { x:0, y:0, w: doc.width, h: doc.height }
+    };
+    const metaFile = await folder.createFile('ps_export.json', { overwrite: true });
+    await metaFile.write(JSON.stringify(sidecar, null, 2));
+    document.getElementById('log').innerText = 'Exported to ' + folder.nativePath;
+  }
+  document.getElementById('export').addEventListener('click', () => run().catch(e => document.getElementById('log').innerText = String(e)));
+</script>
+</body>
+</html>

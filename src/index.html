@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ChibishotsPrint</title>
+<link rel="stylesheet" href="../docs/mockups/styles.css" />
+<style>
+  body { overflow:hidden; }
+  .layout { display:grid; grid-template-columns: 72px 1fr; height:100vh; }
+  .main2 { display:flex; flex-direction:column; overflow:hidden; }
+  .view { flex:1; padding:24px; overflow:auto; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+  .job { padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--panel2); }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo"><img src="../chibishots%20logo-UPSCALED.png" alt="Chibishots" /></div>
+    <div class="navbtn active" data-view="print">Print</div>
+    <div class="navbtn" data-view="presets">Presets</div>
+    <div class="navbtn" data-view="queue">Queue</div>
+    <div class="navbtn" data-view="history">History</div>
+  </aside>
+  <main class="main2">
+    <header class="topbar">
+      <h1>ChibishotsPrint</h1>
+      <span class="spacer"></span>
+      <button class="btn" id="openBtn">Open image…</button>
+      <button class="btn primary" id="printBtn">Send to spooler</button>
+    </header>
+    <div class="view" id="view"></div>
+  </main>
+</div>
+<script>
+  const invoke = (cmd, args) => window.__TAURI__ ? window.__TAURI__.core.invoke(cmd, args) : Promise.reject('no tauri');
+  const view = document.getElementById('view');
+  function showPrint() {
+    view.innerHTML = '<h2>Print</h2><p>Select an image and a preset, then send to spooler.</p><div id="status"></div>';
+  }
+  function showPresets() {
+    invoke('list_presets').then(ps => {
+      view.innerHTML = '<h2>Presets</h2>' + ps.map(p => `<div class="card"><strong>${p.name}</strong><br><span style="color:var(--muted);font-size:12px;">${p.media_type} · ${p.icc_profile} · ${p.rendering_intent}</span></div>`).join('');
+    }).catch(e => view.innerHTML = '<p>'+e+'</p>');
+  }
+  function showQueue() {
+    invoke('queue_status').then(js => {
+      view.innerHTML = '<h2>Queue</h2>' + (js.length? js.map(j => `<div class="job"><strong>${j.file}</strong> — ${j.status}<br><span style="color:var(--muted);font-size:12px;">${j.preset} · ${j.submitted_at}</span><br><button class="btn" onclick="cancel('${j.id}')">Cancel</button> <button class="btn primary" onclick="retry('${j.id}')">Retry</button></div>`).join('') : '<p style="color:var(--muted)">No active jobs.</p>');
+    }).catch(e => view.innerHTML = '<p>'+e+'</p>');
+  }
+  function showHistory() {
+    invoke('job_history').then(js => {
+      view.innerHTML = '<h2>History</h2>' + (js.length? js.map(j => `<div class="job">${j.submitted_at} — ${j.file} — ${j.preset} — ${j.notes}</div>`).join('') : '<p style="color:var(--muted)">No history yet.</p>');
+    }).catch(e => view.innerHTML = '<p>'+e+'</p>');
+  }
+  window.cancel = id => invoke('cancel_job',{id}).then(()=>showQueue());
+  window.retry = id => invoke('retry_job',{id}).then(()=>showQueue());
+  document.querySelectorAll('.navbtn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const v = b.dataset.view;
+    if (v==='print') showPrint();
+    if (v==='presets') showPresets();
+    if (v==='queue') showQueue();
+    if (v==='history') showHistory();
+  }));
+  showPrint();
+  invoke('greet').then(m => console.log(m)).catch(()=>{});
+  document.getElementById('openBtn').addEventListener('click', async () => {
+    if (window.__TAURI__ && window.__TAURI__.dialog) {
+      const p = await window.__TAURI__.dialog.open({ filters:[{name:'Images',extensions:['tif','tiff','png','jpg','jpeg']}] });
+      if (p) { window.__selectedFile = p; document.getElementById('status').innerText = 'Selected: '+p; }
+    } else {
+      document.getElementById('status').innerText = 'File picker unavailable (dev)';
+    }
+  });
+  document.getElementById('printBtn').addEventListener('click', async () => {
+    const f = window.__selectedFile || 'sample.tif';
+    await invoke('submit_print',{file:f, preset:'Luster 13x19', notes:''});
+    showQueue();
+    document.querySelector('[data-view="queue"]').click();
+  });
+</script>
+</body>
+</html>

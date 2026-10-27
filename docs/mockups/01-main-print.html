@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Main print view</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><img src="../chibishots%20logo-UPSCALED.png" alt="Chibishots logo" /></div>
+    <div class="navbtn active">Print</div>
+    <div class="navbtn">Queue</div>
+    <div class="navbtn">Hist</div>
+    <div class="navbtn">Sets</div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <h1>ChibishotsPrint — Main print view</h1>
+      <span class="spacer"></span>
+      <button class="btn">Open image…</button>
+      <button class="btn primary">Print</button>
+    </header>
+    <div class="content">
+      <section class="canvas">
+        <img class="preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='320'><rect width='100%' height='100%' fill='%23222'/><text x='50%' y='50%' fill='%23888' text-anchor='middle' font-size='20'>Image preview (A3+)</text></svg>" alt="preview" />
+      </section>
+      <aside class="panel">
+        <h2>Document</h2>
+        <div class="field"><label>Source file</label><input value="photo_001.tif" readonly /></div>
+        <div class="field"><label>Preset</label>
+          <select><option>PRO-100S · Luster 13x19 · ICC Canon Luster</option></select>
+        </div>
+        <h2>Paper &amp; layout</h2>
+        <div class="field"><label>Paper size</label>
+          <select><option>A3+ (13x19 in)</option><option>A4</option><option>Letter</option></select>
+        </div>
+        <div class="field"><label>Orientation</label>
+          <div class="row"><button class="btn">Portrait</button><button class="btn primary">Landscape</button></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Margin top (mm)</label><input value="5" /></div>
+          <div class="field"><label>Margin bottom (mm)</label><input value="5" /></div>
+          <div class="field"><label>Margin left (mm)</label><input value="5" /></div>
+          <div class="field"><label>Margin right (mm)</label><input value="5" /></div>
+        </div>
+        <div class="field"><label>Scale to fit</label><select><option>Fit to page</option><option>100%</option><option>Custom</option></select></div>
+        <h2>Color</h2>
+        <div class="field"><label>Rendering intent</label><select><option>Perceptual</option><option>Relative Colorimetric</option><option>Saturation</option><option>Absolute Colorimetric</option></select></div>
+        <div class="field"><label>Driver color correction</label><input value="None (app-managed)" readonly /></div>
+        <h2>Notes</h2>
+        <div class="field"><textarea rows="3" placeholder="Job notes…"></textarea></div>
+      </aside>
+    </div>
+    <div class="toolbar">
+      <span class="status ok">Ready</span>
+      <span style="color:var(--muted);font-size:12px;margin-left:8px;">Source 4000×3000 px · 300 dpi · sRGB</span>
+      <span class="spacer"></span>
+      <button class="btn">Cancel</button>
+      <button class="btn primary">Send to spooler</button>
+    </div>
+  </main>
+</div>
+</body>
+</html>
