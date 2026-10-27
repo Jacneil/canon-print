@@ -26,7 +26,7 @@ lcms2 = "6"
 # Image processing
 image = { version = "0.25", features = ["tiff", "png", "jpeg"] }
 # ONNX Runtime for RealPLKSR upscaling
-ort = { version = "2", features = ["download-binaries"] }
+ort = { version = "2.0.0-rc.15", features = ["download-binaries"] }
 # HTTP download for model on first use
 reqwest = { version = "0.12", features = ["stream"] }
 futures-util = "0.3"
