@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::sync::Mutex;
 use tauri::State;
+use tauri::Manager;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Preset {
@@ -445,6 +446,7 @@ async fn download_upscale_model(app: tauri::AppHandle) -> Result<String, String>
         let progress = if total > 0 { downloaded as f64 / total as f64 } else { 0.0 };
         app.emit("upscale-model-progress", serde_json::json!({"stage":"downloading","progress":progress,"downloaded":downloaded,"total":total})).ok();
     }
+    use std::io::Write;
     file.flush().map_err(|e| e.to_string())?;
     app.emit("upscale-model-progress", serde_json::json!({"stage":"done","progress":1.0,"path":path})).ok();
     Ok(path.to_string_lossy().to_string())
@@ -453,7 +455,7 @@ async fn download_upscale_model(app: tauri::AppHandle) -> Result<String, String>
 fn run_onnx_upscale(app: tauri::AppHandle, input_path: &str, out_path: &str, scale: u32) -> Result<String, String> {
     use ort::session::Session;
     use ort::value::Tensor;
-    use std::collections::HashMap;
+    // use std::collections::HashMap;
 
     let model_path = upscale_model_path(&app)?;
     if !model_path.exists() {
@@ -472,17 +474,17 @@ fn run_onnx_upscale(app: tauri::AppHandle, input_path: &str, out_path: &str, sca
         }
     }
 
-    let mut session = Session::builder().map_err(|e| e.to_string())?
+    let env = ort::init().build().map_err(|e| e.to_string())?;
+    let mut session = Session::builder(&env).map_err(|e| e.to_string())?
         .with_optimization_level(ort::session::builder::GraphOptimizationLevel::Level3).map_err(|e| e.to_string())?
         .commit_from_file(&model_path).map_err(|e| e.to_string())?;
 
     let input_tensor = Tensor::from_array(([1i64, 3, h as i64, w as i64], input)).map_err(|e| e.to_string())?;
 
-    let input_name = session.inputs().first().map(|i| i.name.clone()).unwrap_or_else(|| "input".into());
-    let outputs = session.run(ort::inputs![input_name.as_str() => input_tensor]).map_err(|e| e.to_string())?;
+    let input_name = "input";
+    let outputs = session.run(ort::inputs![input_name => input_tensor]).map_err(|e| e.to_string())?;
 
-    let out_name = session.outputs().first().map(|o| o.name.clone()).unwrap_or_default();
-    let out_val = &outputs[out_name.as_str()];
+    let out_val = outputs.values().next().ok_or("no output")?;
     let (shape, data) = out_val.try_extract_tensor::<f32>().map_err(|e| e.to_string())?;
     let out_h = shape[2] as usize;
     let out_w = shape[3] as usize;
