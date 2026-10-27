@@ -11,7 +11,7 @@ Features (v2):
 - Profile picker by paper.
 - Application-managed color path (lcms2) and driver settings per media.
 - Tauri + Rust desktop app (Windows first, macOS-compatible structure).
-- Accept image files (TIFF/PNG/JPEG) via file picker and watched-folder handoff from Photoshop.
+- Accept image and PDF files (TIFF/PNG/JPEG/PDF) via file picker and watched-folder handoff from Photoshop; PDF pages are rendered to images for the print pipeline.
 - Per-media presets: media type + Canon driver settings + ICC printer profile + rendering intent + margins.
 - Print queue: submit to spooler, status, cancel, retry.
 - Job history: date, media, profile, notes (no cost tracking).
