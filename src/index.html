@@ -46,6 +46,12 @@
       '<label><input type="checkbox" id="upscaleSharpen" checked> Sharpen</label>' +
       '<label>Min edge px: <input id="upscaleMin" type="number" value="1200" style="width:80px"></label>' +
       '</div>' +
+      '<div id="modelStatus" style="font-size:12px;color:var(--muted);margin:8px 0;">Model: checking…</div>' +
+      '<button class="btn" id="downloadModelBtn" style="margin-bottom:8px;">Download upscaler model</button>' +
+      '<div id="modelProgress" style="display:none;margin-bottom:8px;">' +
+      '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;"><div id="modelProgressBar" style="height:100%;width:0%;background:var(--accent,#f97316);transition:width .2s"></div></div>' +
+      '<div id="modelProgressText" style="font-size:12px;color:var(--muted);margin-top:4px;">Idle</div>' +
+      '</div>' +
       '<div id="upscaleProgress" style="display:none;margin-top:8px;">' +
       '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;"><div id="upscaleProgressBar" style="height:100%;width:0%;background:var(--accent,#f97316);transition:width .2s"></div></div>' +
       '<div id="upscaleProgressText" style="font-size:12px;color:var(--muted);margin-top:4px;">Idle</div>' +
@@ -64,7 +70,33 @@
         txt.innerText = (d.stage||'') + ' ' + Math.round((d.progress||0)*100)+'%';
         if (d.stage === 'done') setTimeout(()=>{ box.style.display='none'; }, 1200);
       });
+      window.__TAURI__.event.listen('upscale-model-progress', (e) => {
+        const d = e.payload || {};
+        const bar = document.getElementById('modelProgressBar');
+        const txt = document.getElementById('modelProgressText');
+        const box = document.getElementById('modelProgress');
+        if (!bar) return;
+        box.style.display = 'block';
+        bar.style.width = Math.round((d.progress||0)*100)+'%';
+        txt.innerText = (d.stage||'') + ' ' + Math.round((d.progress||0)*100)+'%';
+        if (d.stage === 'done') {
+          setTimeout(()=>{ box.style.display='none'; }, 1200);
+          refreshModelStatus();
+        }
+      });
     }
+    const btn = document.getElementById('downloadModelBtn');
+    if (btn) btn.addEventListener('click', async () => {
+      try { await invoke('download_upscale_model'); refreshModelStatus(); } catch(e){ console.warn(e); }
+    });
+    refreshModelStatus();
+  }
+  async function refreshModelStatus() {
+    try {
+      const s = await invoke('upscale_model_status');
+      const el = document.getElementById('modelStatus');
+      if (el) el.innerText = 'Model: ' + (s.downloaded ? 'ready (' + (s.path||'') + ')' : 'not downloaded');
+    } catch(e) {}
   }
   function showPresets() {
     invoke('list_presets').then(ps => {
@@ -96,7 +128,7 @@
   invoke('greet').then(m => console.log(m)).catch(()=>{});
   document.getElementById('openBtn').addEventListener('click', async () => {
     if (window.__TAURI__ && window.__TAURI__.dialog) {
-      const p = await window.__TAURI__.dialog.open({ filters:[{name:'Images & PDFs',extensions:['tif','tiff','png','jpg','jpeg','pdf']}] });
+      const p = await window.__TAURI__.dialog.open({ filters:[{name:'Images',extensions:['tif','tiff','png','jpg','jpeg']}] });
       if (p) { window.__selectedFile = p; document.getElementById('status').innerText = 'Selected: '+p; }
     } else {
       document.getElementById('status').innerText = 'File picker unavailable (dev)';
@@ -106,9 +138,9 @@
     const f = window.__selectedFile || 'sample.tif';
     const toggle = document.getElementById('upscaleToggle');
     const force = document.getElementById('upscaleForce');
-    const scale = parseInt(document.getElementById('upscaleScale').value||'2',10);
-    const sharpen = document.getElementById('upscaleSharpen').checked;
-    const minEdge = parseInt(document.getElementById('upscaleMin').value||'1200',10);
+    const scale = parseInt((document.getElementById('upscaleScale')||{}).value||'2',10);
+    const sharpen = (document.getElementById('upscaleSharpen')||{}).checked !== false;
+    const minEdge = parseInt((document.getElementById('upscaleMin')||{}).value||'1200',10);
     let fileToPrint = f;
     try {
       fileToPrint = await invoke('prepare_print_image', {
