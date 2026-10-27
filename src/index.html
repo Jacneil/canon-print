@@ -37,7 +37,34 @@
   const invoke = (cmd, args) => window.__TAURI__ ? window.__TAURI__.core.invoke(cmd, args) : Promise.reject('no tauri');
   const view = document.getElementById('view');
   function showPrint() {
-    view.innerHTML = '<h2>Print</h2><p>Select an image and a preset, then send to spooler.</p><div id="status"></div>';
+    view.innerHTML = '<h2>Print</h2><p>Select an image and a preset, then send to spooler.</p>' +
+      '<div style="margin:12px 0;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)">' +
+      '<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><input type="checkbox" id="upscaleToggle" checked> Upscale small images automatically</label>' +
+      '<label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><input type="checkbox" id="upscaleForce"> Force upscale selected image</label>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">' +
+      '<label>Scale: <select id="upscaleScale"><option value="2">2x</option><option value="4">4x</option></select></label>' +
+      '<label><input type="checkbox" id="upscaleSharpen" checked> Sharpen</label>' +
+      '<label>Min edge px: <input id="upscaleMin" type="number" value="1200" style="width:80px"></label>' +
+      '</div>' +
+      '<div id="upscaleProgress" style="display:none;margin-top:8px;">' +
+      '<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;"><div id="upscaleProgressBar" style="height:100%;width:0%;background:var(--accent,#f97316);transition:width .2s"></div></div>' +
+      '<div id="upscaleProgressText" style="font-size:12px;color:var(--muted);margin-top:4px;">Idle</div>' +
+      '</div>' +
+      '</div>' +
+      '<div id="status"></div>';
+    if (window.__TAURI__ && window.__TAURI__.event) {
+      window.__TAURI__.event.listen('upscale-progress', (e) => {
+        const d = e.payload || {};
+        const bar = document.getElementById('upscaleProgressBar');
+        const txt = document.getElementById('upscaleProgressText');
+        const box = document.getElementById('upscaleProgress');
+        if (!bar) return;
+        box.style.display = 'block';
+        bar.style.width = Math.round((d.progress||0)*100)+'%';
+        txt.innerText = (d.stage||'') + ' ' + Math.round((d.progress||0)*100)+'%';
+        if (d.stage === 'done') setTimeout(()=>{ box.style.display='none'; }, 1200);
+      });
+    }
   }
   function showPresets() {
     invoke('list_presets').then(ps => {
@@ -77,7 +104,23 @@
   });
   document.getElementById('printBtn').addEventListener('click', async () => {
     const f = window.__selectedFile || 'sample.tif';
-    await invoke('submit_print',{file:f, preset:'Luster 13x19', notes:''});
+    const toggle = document.getElementById('upscaleToggle');
+    const force = document.getElementById('upscaleForce');
+    const scale = parseInt(document.getElementById('upscaleScale').value||'2',10);
+    const sharpen = document.getElementById('upscaleSharpen').checked;
+    const minEdge = parseInt(document.getElementById('upscaleMin').value||'1200',10);
+    let fileToPrint = f;
+    try {
+      fileToPrint = await invoke('prepare_print_image', {
+        path: f,
+        upscaleEnabled: !!(force && force.checked),
+        autoSmall: !!(toggle && toggle.checked),
+        minEdgePx: minEdge,
+        scale: scale,
+        sharpen: sharpen
+      });
+    } catch (e) { console.warn('upscale skipped', e); }
+    await invoke('submit_print',{file:fileToPrint, preset:'Luster 13x19', notes:''});
     showQueue();
     document.querySelector('[data-view="queue"]').click();
   });
