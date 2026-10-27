@@ -127,8 +127,8 @@
   showPrint();
   invoke('greet').then(m => console.log(m)).catch(()=>{});
   document.getElementById('openBtn').addEventListener('click', async () => {
-    if (window.__TAURI__ && window.__TAURI__.dialog) {
-      const p = await window.__TAURI__.dialog.open({ filters:[{name:'Images',extensions:['tif','tiff','png','jpg','jpeg']}] });
+    if (window.__TAURI__ && window.__TAURI__.core) {
+      const p = await window.__TAURI__.core.invoke('open_image_dialog');
       if (p) { window.__selectedFile = p; document.getElementById('status').innerText = 'Selected: '+p; }
     } else {
       document.getElementById('status').innerText = 'File picker unavailable (dev)';
