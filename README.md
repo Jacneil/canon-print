@@ -2,17 +2,22 @@
 
 Windows (later macOS) native print companion for the Canon PIXMA PRO-100S, replacing Canon Print Studio Pro.
 
-Features (MVP):
-- Tauri + Rust desktop app skeleton (Windows first, macOS-compatible structure).
+Features (v2):
+- Templates: A5 folded card 2-up with fold, A4 print, 6x4, canvas wrap margins, transfers with mirroring.
+- Nesting: auto-pack multiple images onto a sheet with margins/gutters, rotate for fit.
+- Batch queue with presets and drag-drop reordering.
+- Soft-proof preview: simulate printer profile on screen using display profile.
+- ColorMunki/X-Rite ICC profile import and validation.
+- Profile picker by paper.
+- Application-managed color path (lcms2) and driver settings per media.
+- Tauri + Rust desktop app (Windows first, macOS-compatible structure).
 - Accept image files (TIFF/PNG/JPEG) via file picker and watched-folder handoff from Photoshop.
 - Per-media presets: media type + Canon driver settings + ICC printer profile + rendering intent + margins.
-- Application-managed color: transform source to printer ICC via lcms2, submit to spooler with driver color correction None.
-- Basic layout: single image, crop/resize/rotate, paper size, margins, orientation.
 - Print queue: submit to spooler, status, cancel, retry.
 - Job history: date, media, profile, notes (no cost tracking).
 - Photoshop UXP panel: export flattened image + metadata to watched folder / invoke app.
 
-Out of scope for MVP (v2): nesting, templates, soft proof, batch queue, ColorMunki in-app profiling.
+Cost tracking remains out of scope.
 
 ## Build instructions
 
