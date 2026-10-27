@@ -7,6 +7,7 @@ Features (v2):
 - Nesting: auto-pack multiple images onto a sheet with margins/gutters, rotate for fit.
 - Batch queue with presets and drag-drop reordering.
 - Soft-proof preview: simulate printer profile on screen using display profile.
+- Built-in image upscaling (Lanczos3 + unsharp, auto for small images) for sharper prints, with progress UI.
 - ColorMunki/X-Rite ICC profile import and validation.
 - Profile picker by paper.
 - Application-managed color path (lcms2) and driver settings per media.

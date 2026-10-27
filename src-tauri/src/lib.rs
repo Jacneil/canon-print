@@ -387,6 +387,80 @@ fn soft_proof(input_path: String, output_path: String, printer_profile: String, 
     Ok(output_path)
 }
 
+#[tauri::command]
+fn image_dimensions(path: String) -> Result<(u32, u32), String> {
+    let img = image::open(&path).map_err(|e| e.to_string())?;
+    Ok((img.width(), img.height()))
+}
+
+#[tauri::command]
+fn should_upscale(path: String, min_edge_px: u32) -> Result<bool, String> {
+    let (w, h) = image_dimensions(path)?;
+    Ok(w.min(h) < min_edge_px)
+}
+
+#[tauri::command]
+async fn upscale_image(
+    app: tauri::AppHandle,
+    path: String,
+    out_path: String,
+    scale: u32,
+    sharpen: bool,
+) -> Result<String, String> {
+    use tauri::Emitter;
+    let scale = scale.clamp(1, 4);
+    app.emit("upscale-progress", serde_json::json!({"stage":"loading","progress":0.0})).ok();
+
+    let img = image::open(&path).map_err(|e| e.to_string())?;
+    let (w, h) = (img.width(), img.height());
+    let new_w = w.saturating_mul(scale);
+    let new_h = h.saturating_mul(scale);
+
+    app.emit("upscale-progress", serde_json::json!({"stage":"resizing","progress":0.25,"from":[w,h],"to":[new_w,new_h]})).ok();
+
+    let mut out = img.resize_exact(new_w, new_h, image::imageops::FilterType::Lanczos3);
+
+    if sharpen {
+        app.emit("upscale-progress", serde_json::json!({"stage":"sharpening","progress":0.7})).ok();
+        out = out.unsharpen(1.0, 1);
+    }
+
+    app.emit("upscale-progress", serde_json::json!({"stage":"saving","progress":0.9})).ok();
+    out.save(&out_path).map_err(|e| e.to_string())?;
+
+    app.emit("upscale-progress", serde_json::json!({"stage":"done","progress":1.0,"path":out_path})).ok();
+    Ok(out_path)
+}
+
+#[tauri::command]
+async fn prepare_print_image(
+    app: tauri::AppHandle,
+    path: String,
+    upscale_enabled: bool,
+    auto_small: bool,
+    min_edge_px: u32,
+    scale: u32,
+    sharpen: bool,
+) -> Result<String, String> {
+    let need = if upscale_enabled {
+        true
+    } else if auto_small {
+        should_upscale(path.clone(), min_edge_px).unwrap_or(false)
+    } else {
+        false
+    };
+    if !need {
+        return Ok(path);
+    }
+    let p = std::path::Path::new(&path);
+    let stem = p.file_stem().and_then(|s| s.to_str()).unwrap_or("image");
+    let dir = p.parent().unwrap_or_else(|| std::path::Path::new("."));
+    let out = dir.join(format!("{}_upscaled.png", stem));
+    let out_path = out.to_string_lossy().to_string();
+    upscale_image(app, path, out_path.clone(), scale, sharpen).await?;
+    Ok(out_path)
+}
+
 fn uuid_simple() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
     let t = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
@@ -431,7 +505,11 @@ pub fn run() {
             profile_for_paper,
             set_profile_for_paper,
             color_transform,
-            soft_proof
+            soft_proof,
+            image_dimensions,
+            should_upscale,
+            upscale_image,
+            prepare_print_image
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
