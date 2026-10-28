@@ -201,6 +201,7 @@ fn cancel_job(state: State<AppState>, id: String) -> Result<(), String> {
 fn retry_job(state: State<AppState>, id: String) -> Result<PrintJob, String> {
     let mut q = state.queue.lock().map_err(|e| e.to_string())?;
     let job = q.iter().find(|j| j.id == id).cloned().ok_or("job not found")?;
+    if let Some(pos) = q.iter().position(|j| j.id == id) { q.remove(pos); }
     let mut newjob = job.clone();
     newjob.id = uuid_simple();
     newjob.status = "Queued".into();
@@ -620,6 +621,15 @@ fn now() -> String {
     format!("{}", t)
 }
 
+#[tauri::command]
+fn open_image_dialog(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+    let file = app.dialog().file()
+        .add_filter("Images", &["tif", "tiff", "png", "jpg", "jpeg", "pdf"])
+        .blocking_pick_file();
+    Ok(file.map(|p| p.to_string()))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -658,7 +668,8 @@ pub fn run() {
             upscale_image,
             prepare_print_image,
             upscale_model_status,
-            download_upscale_model
+            download_upscale_model,
+            open_image_dialog
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
