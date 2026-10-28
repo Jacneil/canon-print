@@ -15,7 +15,8 @@
         "title": "ChibishotsPrint",
         "width": 1280,
         "height": 820,
-        "resizable": true
+        "resizable": true,
+        "devtools": true
       }
     ],
     "security": {
