@@ -127,10 +127,12 @@
   showPrint();
   invoke('greet').then(m => console.log(m)).catch(()=>{});
   document.getElementById('openBtn').addEventListener('click', async () => {
-    if (window.__TAURI__ && window.__TAURI__.core) {
-      const p = await window.__TAURI__.core.invoke('open_image_dialog');
+    try {
+      const p = await invoke('open_image_dialog');
       if (p) { window.__selectedFile = p; document.getElementById('status').innerText = 'Selected: '+p; }
-    } else {
+    } catch (e) {
+      document.getElementById('status').innerText = 'File picker unavailable (dev)';
+    }
       document.getElementById('status').innerText = 'File picker unavailable (dev)';
     }
   });
